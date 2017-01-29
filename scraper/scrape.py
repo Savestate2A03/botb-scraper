@@ -1,13 +1,18 @@
 import http.client
 import getpass
+import re
 
 def default_headers(client, cookies = None):
     client.putheader('Accept', 'text/html')
     client.putheader('Accept-Language', 'en-US')
     client.putheader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36')
     if cookies is not None:
-        print ('; '.join(cookies))
         client.putheader('Cookie', '; '.join(cookies))
+
+def regex_extract(expression, key, dictionary):
+    regex = re.compile(expression)
+    match = regex.search(webpage)
+    dictionary[key] = match.group(1)
 
 base_url = 'battleofthebits.org'
 base_dir = '/arena/Entry/botb-scraper/'
@@ -75,5 +80,31 @@ client.putrequest("GET", '/')
 default_headers(client, botb_cookies)
 client.endheaders()
 response = client.getresponse()
-print(str(response.read()))
+webpage = str(response.read())
 client.close()
+
+# RegEx / BotBr info building
+print("Logged in!")
+botbr_info = {}
+regex_extract('<b><a href="http://battleofthebits.org/barracks/Profile/.{1,64}/">(.{1,64})</a></b>',
+              'username',
+              botbr_info)
+regex_extract('<sub>b</sub>([0-9\.]+)\W+</span>',
+              'b00ns',
+              botbr_info)
+regex_extract('\W+L([0-9]{,2})\W+.{,64}\W+&nbsp;',
+              'level',
+              botbr_info)
+regex_extract('\W+L[0-9]{,2}\W+(\w{,64})\W+&nbsp;',
+              'class',
+              botbr_info)
+regex_extract('<div class="levelProgress" title="([0-9]+) points to next level">',
+              'levelup_progress',
+              botbr_info)
+print('helo there ' + botbr_info['username'] + '!~ (-:')
+print('stats panel [[ lvl. ' + botbr_info['level'] + ' ' + botbr_info['class'].lower())
+print('            [[ ' + botbr_info['levelup_progress'] + ' pts till lvl. ' + str(int(botbr_info['level'])+1))
+print('            [[ ' + botbr_info['b00ns'] + ' b00ns')
+print('_______________________________________')
+print(' what do u wanna do ??? ')
+
