@@ -13,7 +13,7 @@ req_boundary = '----BotBScraperBoundary'
 
 # Get session cookies which allows for downloading BotB content
 print('Please sign into BotB')
-botb_user = input(' emailadd: ')
+botb_user = input(' email: ')
 botb_pass = getpass.getpass(' password: ')
 
 # Get PHP SessionID
