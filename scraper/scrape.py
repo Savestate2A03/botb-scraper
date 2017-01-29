@@ -17,6 +17,9 @@ base_dir = '/arena/Entry/botb-scraper/'
 base_login = '/barracks/Login/'
 req_boundary = '----BotBScraperBoundary'
 
+# Given a client and optional cookies
+# it will add a few headers that are used
+# for all connections.
 def default_headers(client, cookies = None):
     client.putheader('Accept', 'text/html')
     client.putheader('Accept-Language', 'en-US')
@@ -24,11 +27,16 @@ def default_headers(client, cookies = None):
     if cookies is not None:
         client.putheader('Cookie', '; '.join(cookies))
 
+# Returns the 1st group in a matched
+# regular expression and adds it to
+# a dictionary.
 def regex_extract(expression, key, dictionary):
     regex = re.compile(expression)
     match = regex.search(webpage)
     dictionary[key] = match.group(1)
 
+# Signs into BotB
+# Returns the session cookies
 def botb_signin():
     # Get session cookies which allows for downloading BotB content
     print('Please sign into BotB')
