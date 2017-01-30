@@ -30,9 +30,9 @@ def default_headers(client, cookies = None):
 # Returns the 1st group in a matched
 # regular expression and adds it to
 # a dictionary.
-def regex_extract(expression, key, dictionary):
+def regex_extract(expression, source, key, dictionary):
     regex = re.compile(expression)
-    match = regex.search(webpage)
+    match = regex.search(source)
     dictionary[key] = match.group(1)
 
 # Signs into BotB
@@ -52,7 +52,7 @@ def botb_signin():
     response = client.getresponse()
     # Get cookie through black magic
     php_session = [header[1] for header in response.getheaders() if header[0] == 'Set-Cookie'][0]
-    php_session = php_session[:php_session.index(";")-1]
+    php_session = php_session[:php_session.index(";")]
     client.close()
 
     # Sign into BotB using the provided credidentials
@@ -93,6 +93,8 @@ def botb_signin():
             botb_cookies.append(header[1][:header[1].index(';')])
     client.close()
 
+    print("Logged in!")
+
     # Save these cookies for future use!
     cookies_pass = getpass.getpass(' cookies password (saving encrypted cookies to disk)\n --> ')
     salt = os.urandom(16)
@@ -106,47 +108,50 @@ def botb_signin():
     key = base64.urlsafe_b64encode(kdf.derive(cookies_pass.encode()))
     fnet = Fernet(key)
     token = fnet.encrypt('; '.join(botb_cookies).encode())
+    print('Saving encrypted cookies & salt to disk...')
     file = open('salt', 'wb')
     file.write(salt)
     file.close()
     file = open('cookies', 'wb')
     file.write(token)
     file.close()
+    print('...saved! "./salt" and "./cookies".')
     return botb_cookies
 
-# =================================================
+def botb_load_init_info(botb_cookies):
+    # Load up the BotB homepage, allowing us to get the user and their points etc
+    # Havin some fun here w/ the scraper.
+    client = http.client.HTTPConnection(base_url)
+    client.connect()
+    client.putrequest("GET", '/')
+    default_headers(client, botb_cookies)
+    client.endheaders()
+    response = client.getresponse()
+    webpage = str(response.read())
+    client.close()
+
+    # RegEx / BotBr info building
+    botbr_info = {}
+    regex_extract('<b><a href="http://battleofthebits.org/barracks/Profile/.{1,64}/">(.{1,64})</a></b>',
+                  webpage, 'username', botbr_info)
+    regex_extract('<sub>b</sub>([0-9\.]+)\W+</span>',
+                  webpage, 'b00ns', botbr_info)
+    regex_extract('\W+L([0-9]{,2})\W+.{,64}\W+&nbsp;',
+                  webpage, 'level', botbr_info)
+    regex_extract('\W+L[0-9]{,2}\W+(\w{,64})\W+&nbsp;',
+                  webpage, 'class', botbr_info)
+    regex_extract('<div class="levelProgress" title="([0-9]+) points to next level">',
+                  webpage, 'levelup_progress', botbr_info)
+
+    return botbr_info
+
+# ==================== #
+# #### Main Logic #### #
+# ==================== #
 
 botb_cookies = botb_signin()
+botbr_info = botb_load_init_info(botb_cookies)
 
-# Load up the BotB homepage, allowing us to get the user and their points etc
-# Havin some fun here w/ the scraper.
-client = http.client.HTTPConnection(base_url)
-client.connect()
-client.putrequest("GET", '/')
-default_headers(client, botb_cookies)
-client.endheaders()
-response = client.getresponse()
-webpage = str(response.read())
-client.close()
-
-# RegEx / BotBr info building
-print("Logged in!")
-botbr_info = {}
-regex_extract('<b><a href="http://battleofthebits.org/barracks/Profile/.{1,64}/">(.{1,64})</a></b>',
-              'username',
-              botbr_info)
-regex_extract('<sub>b</sub>([0-9\.]+)\W+</span>',
-              'b00ns',
-              botbr_info)
-regex_extract('\W+L([0-9]{,2})\W+.{,64}\W+&nbsp;',
-              'level',
-              botbr_info)
-regex_extract('\W+L[0-9]{,2}\W+(\w{,64})\W+&nbsp;',
-              'class',
-              botbr_info)
-regex_extract('<div class="levelProgress" title="([0-9]+) points to next level">',
-              'levelup_progress',
-              botbr_info)
 print('helo there ' + botbr_info['username'] + '!~ (-:')
 print('stats panel [[ lvl. ' + botbr_info['level'] + ' ' + botbr_info['class'].lower())
 print('            [[ ' + botbr_info['levelup_progress'] + ' pts till lvl. ' + str(int(botbr_info['level'])+1))
