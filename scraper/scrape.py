@@ -5,6 +5,8 @@ import re
 import base64
 import os
 
+from pathlib import Path
+
 # https://pypi.python.org/pypi/cryptography
 # install with '$ pip install cryptography'
 from cryptography.fernet import Fernet
@@ -145,11 +147,37 @@ def botb_load_init_info(botb_cookies):
 
     return botbr_info
 
+def botb_load_cookies():
+    path_cookies = Path('cookies')
+    path_salt    = Path('salt')
+    if path_cookies.is_file() and path_salt.is_file():
+        cookies_pass = getpass.getpass('Previous session found! Password to decrypt cookies\n --> ')
+        file_salt = path_salt.open('rb')
+        salt = file_salt.read()
+        file_salt.close()
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100000,
+            backend=default_backend()
+            )
+        key = base64.urlsafe_b64encode(kdf.derive(cookies_pass.encode()))
+        fnet = Fernet(key)
+        file_cookies = path_cookies.open('rb')
+        encrypted_cookies = file_cookies.read()
+        file_cookies.close()
+        return fnet.decrypt(encrypted_cookies).decode().split('; ')
+    else:
+        return botb_signin()
+
 # ==================== #
 # #### Main Logic #### #
 # ==================== #
 
-botb_cookies = botb_signin()
+
+
+botb_cookies = botb_load_cookies()
 botbr_info = botb_load_init_info(botb_cookies)
 
 print('helo there ' + botbr_info['username'] + '!~ (-:')
