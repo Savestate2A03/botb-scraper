@@ -129,7 +129,7 @@ def botb_load_init_info(botb_cookies):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    webpage = str(response.read())
+    webpage = response.read().decode()
     client.close()
 
     # RegEx / BotBr info building
@@ -171,6 +171,17 @@ def botb_load_cookies():
     else:
         return botb_signin()
 
+def download_entry_page(botb_cookies, entry_number):
+    client = http.client.HTTPConnection(base_url)
+    client.connect()
+    client.putrequest("GET", base_dir + str(entry_number))
+    default_headers(client, botb_cookies)
+    client.endheaders()
+    response = client.getresponse()
+    webpage = response.read().decode()
+    client.close()
+    return webpage
+
 # ==================== #
 # #### Main Logic #### #
 # ==================== #
@@ -185,5 +196,6 @@ print('stats panel [[ lvl. ' + botbr_info['level'] + ' ' + botbr_info['class'].l
 print('            [[ ' + botbr_info['levelup_progress'] + ' pts till lvl. ' + str(int(botbr_info['level'])+1))
 print('            [[ ' + botbr_info['b00ns'] + ' b00ns')
 print('_______________________________________')
-print(' what do u wanna do ??? ')
+
+print(download_entry_page(botb_cookies, 1))
 
