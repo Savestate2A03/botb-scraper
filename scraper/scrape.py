@@ -130,7 +130,7 @@ def botb_load_init_info(botb_cookies):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    webpage = str(response.read())
+    webpage = response.read().decode()
     client.close()
 
     # RegEx / BotBr info building
@@ -191,6 +191,18 @@ def create_default_directories():
         print('Error creating directories!!')
         sys.exit(-1)
 
+def download_entry_page(botb_cookies, entry_number):
+    client = http.client.HTTPConnection(base_url)
+    client.connect()
+    client.putrequest("GET", base_dir + str(entry_number))
+    default_headers(client, botb_cookies)
+    client.endheaders()
+    response = client.getresponse()
+    webpage = response.read().decode()
+    client.close()
+    return webpage
+
+
 # ==================== #
 # #### Main Logic #### #
 # ==================== #
@@ -205,3 +217,4 @@ print('            [[ ' + botbr_info['levelup_progress'] + ' pts till lvl. ' + s
 print('            [[ ' + botbr_info['b00ns'] + ' b00ns')
 print('_______________________________________')
 
+print(download_entry_page(botb_cookies, 1))
