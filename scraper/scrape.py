@@ -287,7 +287,7 @@ print('_______________________________________')
 
 input_from = input("entry from: ")
 input_to = input("entry to: ")
-for num in range(int(input_from), int(input_to)):
+for num in range(int(input_from), int(input_to)+1):
     try:
         print(" Donloadin' " + str(num) + "...")
         download_entry_page(botb_cookies, num)
