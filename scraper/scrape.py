@@ -268,7 +268,6 @@ def download_entry(botb_cookies, entry_number):
     f = open('files/orig/' + filename, 'wb')
     f.write(original_file)
     f.close()
-    print("   >>> " + filename)
     client.close()
     # mp3 --------------------
     print(" - mp3...")
@@ -277,12 +276,12 @@ def download_entry(botb_cookies, entry_number):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    filename = get_entry_filename(botb_cookies, entry_number, True)
+    if not filename.lower().endswith('.mp3'):
+        filename = filename + ".mp3"
     original_file = response.read()
     f = open('files/mp3/' + filename, 'wb')
     f.write(original_file)
     f.close()
-    print("   >>> " + filename)
     tag_mp3(filename, entry_number, botb_cookies)
     client.close()    
 
