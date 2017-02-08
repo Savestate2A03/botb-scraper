@@ -8,6 +8,11 @@ import os
 from pathlib import Path
 import errno
 
+# https://mutagen.readthedocs.io/en/latest/
+# install with '$ pip install mutagen'
+import mutagen
+from mutagen.easyid3 import EasyID3
+
 # https://pypi.python.org/pypi/cryptography
 # install with '$ pip install cryptography'
 from cryptography.fernet import Fernet
@@ -15,8 +20,15 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
+# botb api
+import json
+from io import StringIO
+
 base_url = 'battleofthebits.org'
 base_dir = '/arena/Entry/botb-scraper/'
+base_donload_orig = '/player/EntryDonload/' # number/file#
+base_donload_mp3  = '/player/MP3Donload/' # number/file
+base_api = '/api/v1/entry/load/'
 base_login = '/barracks/Login/'
 req_boundary = '----BotBScraperBoundary'
 
@@ -37,6 +49,14 @@ def regex_extract(expression, source, key, dictionary):
     regex = re.compile(expression)
     match = regex.search(source)
     dictionary[key] = match.group(1)
+
+# Returns the 1st group in a matched
+# regular expression and adds it to
+# a dictionary.
+def regex_extract_simple(expression, source):
+    regex = re.compile(expression)
+    match = regex.search(source)
+    return match.group(1)
 
 # Signs into BotB
 # Returns the session cookies
@@ -185,23 +205,71 @@ def make_sure_path_exists(path):
 def create_default_directories():
     try:
         make_sure_path_exists('files')
-        make_sure_path_exists('files\mp3')
-        make_sure_path_exists('files\orig')
+        make_sure_path_exists('files/mp3')
+        make_sure_path_exists('files/orig')
     except OSError as exception:
         print('Error creating directories!!')
         sys.exit(-1)
 
-def download_entry_page(botb_cookies, entry_number):
+def tag_mp3(filename, entry_number, botb_cookies):
     client = http.client.HTTPConnection(base_url)
-    client.connect()
-    client.putrequest("GET", base_dir + str(entry_number))
+    client.putrequest("GET", base_api + str(entry_number))
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    webpage = response.read().decode()
-    client.close()
-    return webpage
+    entry_json = response.read().decode()
+    json_io = StringIO(entry_json)
+    botb_json_object = json.load(json_io)
+    try:
+        audio = EasyID3("files/mp3/" + filename)
+    except mutagen.id3.ID3NoHeaderError:
+        audio = mutagen.File("files/mp3/" + filename, easy=True)
+        audio.add_tags()
+    audio['title']  = botb_json_object['title']
+    audio['album']  = botb_json_object['battle']['title']
+    audio['artist'] = botb_json_object['botbr']['name']
+    audio['date']   = botb_json_object['battle']['end_date']
+    audio['albumartist'] = 'battleofthebits.org'
+    audio['genre'] = botb_json_object['format']['token']
+    audio['copyright'] = 'CC BY-NC-SA 3.0'
+    audio.save()
 
+# donload the files given an entry number
+def download_entry_page(botb_cookies, entry_number):
+    client = http.client.HTTPConnection(base_url)
+    # original file --------------------
+    print(" - original file...")
+    client.connect()
+    client.putrequest("GET", base_donload_orig + str(entry_number) + '/file')
+    default_headers(client, botb_cookies)
+    client.endheaders()
+    response = client.getresponse()
+    for header in response.getheaders():
+        if header[0] == 'Content-Disposition':
+            filename = regex_extract_simple('^.*filename=\"(.*)\"$', header[1])
+            original_file = response.read()
+            f = open('files/orig/' + filename, 'wb')
+            f.write(original_file)
+            f.close()
+            print("   >>> " + filename)
+    client.close()
+    # mp3 --------------------
+    print(" - mp3...")
+    client.connect()
+    client.putrequest("GET", base_donload_mp3 + str(entry_number) + '/file')
+    default_headers(client, botb_cookies)
+    client.endheaders()
+    response = client.getresponse()
+    for header in response.getheaders():
+        if header[0] == 'Content-Disposition':
+            filename = regex_extract_simple('^.*filename=\"(.*)\"$', header[1])
+            original_file = response.read()
+            f = open('files/mp3/' + filename, 'wb')
+            f.write(original_file)
+            f.close()
+            print("   >>> " + filename)
+            tag_mp3(filename, entry_number, botb_cookies)
+    client.close()    
 
 # ==================== #
 # #### Main Logic #### #
@@ -217,4 +285,12 @@ print('            [[ ' + botbr_info['levelup_progress'] + ' pts till lvl. ' + s
 print('            [[ ' + botbr_info['b00ns'] + ' b00ns')
 print('_______________________________________')
 
-print(download_entry_page(botb_cookies, 1))
+input_from = input("entry from: ")
+input_to = input("entry to: ")
+for num in range(int(input_from), int(input_to)):
+    try:
+        print(" Donloadin' " + str(num) + "...")
+        download_entry_page(botb_cookies, num)
+    except:
+        print(" !!! Can't donload " + str(num) + " !!!")
+    
