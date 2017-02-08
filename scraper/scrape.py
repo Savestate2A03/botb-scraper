@@ -276,6 +276,9 @@ def download_entry(botb_cookies, entry_number):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
+    if not response.getheader('Content-Length'):
+        print ('   > No mp3 render!')
+        return
     if not filename.lower().endswith('.mp3'):
         filename = filename + ".mp3"
     original_file = response.read()
