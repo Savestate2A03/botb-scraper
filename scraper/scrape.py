@@ -236,6 +236,8 @@ def tag_mp3(filename, entry_number, botb_cookies, input_subfolder):
     audio['date']   = botb_json_object['battle']['end_date']
     audio['albumartist'] = 'battleofthebits.org'
     audio['genre'] = botb_json_object['format']['token']
+    audio['tracknumber'] = ''
+    audio['discnumber'] = ''
     audio['copyright'] = 'CC BY-NC-SA 3.0'
     audio.save()
 
@@ -266,7 +268,11 @@ def download_entry(botb_cookies, entry_number, input_subfolder):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    filename = get_entry_filename(botb_cookies, entry_number)
+    try:
+        filename = get_entry_filename(botb_cookies, entry_number)
+    except:
+        print('no entry found!! 0:')
+        return
     original_file = response.read()
     f = open('files/' + input_subfolder + '/orig/' + filename, 'wb')
     f.write(original_file)
