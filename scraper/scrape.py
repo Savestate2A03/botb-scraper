@@ -25,6 +25,9 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 import json
 from io import StringIO
 
+# sleep
+import time
+
 base_url = 'battleofthebits.org'
 base_dir = '/arena/Entry/botb-scraper/'
 base_donload_orig = '/player/EntryDonload/' # number/file#
@@ -204,16 +207,16 @@ def make_sure_path_exists(path):
             raise
 
 # create scraping directories
-def create_default_directories():
+def create_default_directories(input_subfolder):
     try:
-        make_sure_path_exists('files')
-        make_sure_path_exists('files/mp3')
-        make_sure_path_exists('files/orig')
+        make_sure_path_exists('files/'+ input_subfolder)
+        make_sure_path_exists('files/' + input_subfolder + '/mp3')
+        make_sure_path_exists('files/' + input_subfolder + '/orig')
     except OSError as exception:
         print('Error creating directories!!')
         sys.exit(-1)
 
-def tag_mp3(filename, entry_number, botb_cookies):
+def tag_mp3(filename, entry_number, botb_cookies, input_subfolder):
     client = http.client.HTTPConnection(base_url)
     client.putrequest("GET", base_api + str(entry_number))
     default_headers(client, botb_cookies)
@@ -223,9 +226,9 @@ def tag_mp3(filename, entry_number, botb_cookies):
     json_io = StringIO(entry_json)
     botb_json_object = json.load(json_io)
     try:
-        audio = EasyID3("files/mp3/" + filename)
+        audio = EasyID3("files/" + input_subfolder + "/mp3/" + filename)
     except mutagen.id3.ID3NoHeaderError:
-        audio = mutagen.File("files/mp3/" + filename, easy=True)
+        audio = mutagen.File("files/" + input_subfolder + "/mp3/" + filename, easy=True)
         audio.add_tags()
     audio['title']  = botb_json_object['title']
     audio['album']  = botb_json_object['battle']['title']
@@ -254,7 +257,7 @@ def get_entry_filename(botb_cookies, entry_number, ismp3 = False):
     return fixed_url
 
 # donload the files given an entry number
-def download_entry(botb_cookies, entry_number):
+def download_entry(botb_cookies, entry_number, input_subfolder):
     client = http.client.HTTPConnection(base_url)
     # original file --------------------
     print(" - original file...")
@@ -265,7 +268,7 @@ def download_entry(botb_cookies, entry_number):
     response = client.getresponse()
     filename = get_entry_filename(botb_cookies, entry_number)
     original_file = response.read()
-    f = open('files/orig/' + filename, 'wb')
+    f = open('files/' + input_subfolder + '/orig/' + filename, 'wb')
     f.write(original_file)
     f.close()
     client.close()
@@ -282,19 +285,21 @@ def download_entry(botb_cookies, entry_number):
     if not filename.lower().endswith('.mp3'):
         filename = filename + ".mp3"
     original_file = response.read()
-    f = open('files/mp3/' + filename, 'wb')
+    f = open('files/' + input_subfolder + '/mp3/' + filename, 'wb')
     f.write(original_file)
     f.close()
-    tag_mp3(filename, entry_number, botb_cookies)
+    tag_mp3(filename, entry_number, botb_cookies, input_subfolder)
     client.close()    
 
 # ==================== #
 # #### Main Logic #### #
 # ==================== #
 
+input_subfolder = input("subfolder name: ")
+
 botb_cookies = botb_load_cookies()
 botbr_info = botb_load_init_info(botb_cookies)
-create_default_directories()
+create_default_directories(input_subfolder)
 
 print('helo there ' + botbr_info['username'] + '!~ (-:')
 print('stats panel [[ lvl. ' + botbr_info['level'] + ' ' + botbr_info['class'].lower())
@@ -304,8 +309,8 @@ print('_______________________________________')
 
 input_from = input("entry from: ")
 input_to = input("entry to: ")
-for num in range(int(input_from), int(input_to)+1):
-        print(" Donloadin' " + str(num) + "...")
-        download_entry(botb_cookies, num)
 
-    
+for num in range(int(input_from), int(input_to)+1):
+    print(" Donloadin' " + str(num) + "...")
+    download_entry(botb_cookies, num, input_subfolder)
+    time.sleep(2)
