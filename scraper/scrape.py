@@ -6,6 +6,7 @@ import base64
 import os
 
 from pathlib import Path
+import errno
 
 # https://pypi.python.org/pypi/cryptography
 # install with '$ pip install cryptography'
@@ -171,19 +172,36 @@ def botb_load_cookies():
     else:
         return botb_signin()
 
+# http://stackoverflow.com/questions/273192/
+# how-to-check-if-a-directory-exists-and-create-it-if-necessary
+def make_sure_path_exists(path):
+    try:
+        os.makedirs(path)
+    except OSError as exception:
+        if exception.errno != errno.EEXIST:
+            raise
+
+# create scraping directories
+def create_default_directories():
+    try:
+        make_sure_path_exists('files')
+        make_sure_path_exists('files\mp3')
+        make_sure_path_exists('files\orig')
+    except OSError as exception:
+        print('Error creating directories!!')
+        sys.exit(-1)
+
 # ==================== #
 # #### Main Logic #### #
 # ==================== #
 
-
-
 botb_cookies = botb_load_cookies()
 botbr_info = botb_load_init_info(botb_cookies)
+create_default_directories()
 
 print('helo there ' + botbr_info['username'] + '!~ (-:')
 print('stats panel [[ lvl. ' + botbr_info['level'] + ' ' + botbr_info['class'].lower())
 print('            [[ ' + botbr_info['levelup_progress'] + ' pts till lvl. ' + str(int(botbr_info['level'])+1))
 print('            [[ ' + botbr_info['b00ns'] + ' b00ns')
 print('_______________________________________')
-print(' what do u wanna do ??? ')
 
