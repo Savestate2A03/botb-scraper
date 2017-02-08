@@ -1,6 +1,7 @@
 import http.client
 import getpass
 import re
+import urllib
 
 import base64
 import os
@@ -37,7 +38,8 @@ req_boundary = '----BotBScraperBoundary'
 # for all connections.
 def default_headers(client, cookies = None):
     client.putheader('Accept', 'text/html')
-    client.putheader('Accept-Language', 'en-US')
+    client.putheader('Accept-Language', 'utf-8')
+    client.putheader('Accept-Charset', 'utf-8')
     client.putheader('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/55.0.2883.87 Safari/537.36')
     if cookies is not None:
         client.putheader('Cookie', '; '.join(cookies))
@@ -234,8 +236,25 @@ def tag_mp3(filename, entry_number, botb_cookies):
     audio['copyright'] = 'CC BY-NC-SA 3.0'
     audio.save()
 
+def get_entry_filename(botb_cookies, entry_number, ismp3 = False):
+    client = http.client.HTTPConnection(base_url)
+    client.connect()
+    client.putrequest("GET", base_dir + str(entry_number) + '/')
+    default_headers(client, botb_cookies)
+    client.endheaders()
+    response = client.getresponse()
+    fixed_url = "butts"
+    if not ismp3:
+        raw_url = regex_extract_simple('/player/EntryDonload/[0-9]+/(.*)" class="inner boxLink"', response.read().decode('utf-8'))
+        fixed_url = urllib.parse.unquote(urllib.parse.unquote(raw_url))
+    else:
+        raw_url = regex_extract_simple('/player/MP3Donload/[0-9]+/(.*)" class="inner boxLink"', response.read().decode('utf-8'))
+        fixed_url = raw_url
+    client.close()
+    return fixed_url
+
 # donload the files given an entry number
-def download_entry_page(botb_cookies, entry_number):
+def download_entry(botb_cookies, entry_number):
     client = http.client.HTTPConnection(base_url)
     # original file --------------------
     print(" - original file...")
@@ -244,14 +263,12 @@ def download_entry_page(botb_cookies, entry_number):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    for header in response.getheaders():
-        if header[0] == 'Content-Disposition':
-            filename = regex_extract_simple('^.*filename=\"(.*)\"$', header[1])
-            original_file = response.read()
-            f = open('files/orig/' + filename, 'wb')
-            f.write(original_file)
-            f.close()
-            print("   >>> " + filename)
+    filename = get_entry_filename(botb_cookies, entry_number)
+    original_file = response.read()
+    f = open('files/orig/' + filename, 'wb')
+    f.write(original_file)
+    f.close()
+    print("   >>> " + filename)
     client.close()
     # mp3 --------------------
     print(" - mp3...")
@@ -260,15 +277,13 @@ def download_entry_page(botb_cookies, entry_number):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    for header in response.getheaders():
-        if header[0] == 'Content-Disposition':
-            filename = regex_extract_simple('^.*filename=\"(.*)\"$', header[1])
-            original_file = response.read()
-            f = open('files/mp3/' + filename, 'wb')
-            f.write(original_file)
-            f.close()
-            print("   >>> " + filename)
-            tag_mp3(filename, entry_number, botb_cookies)
+    filename = get_entry_filename(botb_cookies, entry_number, True)
+    original_file = response.read()
+    f = open('files/mp3/' + filename, 'wb')
+    f.write(original_file)
+    f.close()
+    print("   >>> " + filename)
+    tag_mp3(filename, entry_number, botb_cookies)
     client.close()    
 
 # ==================== #
@@ -288,9 +303,7 @@ print('_______________________________________')
 input_from = input("entry from: ")
 input_to = input("entry to: ")
 for num in range(int(input_from), int(input_to)+1):
-    try:
         print(" Donloadin' " + str(num) + "...")
-        download_entry_page(botb_cookies, num)
-    except:
-        print(" !!! Can't donload " + str(num) + " !!!")
+        download_entry(botb_cookies, num)
+
     
