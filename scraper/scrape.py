@@ -258,6 +258,20 @@ def get_entry_filename(botb_cookies, entry_number, ismp3 = False):
     client.close()
     return fixed_url
 
+# check if a visual entry
+def is_visual(botb_cookies, entry_number):
+    client = http.client.HTTPConnection(base_url)
+    client.connect()
+    client.putrequest("GET", base_dir + str(entry_number) + '/')
+    default_headers(client, botb_cookies)
+    client.endheaders()
+    response = client.getresponse()
+    if 'title="view entry"><div class="botb-icon icons-eye' in response.read().decode('utf-8'):
+        client.close()
+        return True
+    client.close()
+    return False
+    
 # donload the files given an entry number
 def download_entry(botb_cookies, entry_number, input_subfolder):
     client = http.client.HTTPConnection(base_url)
@@ -285,7 +299,7 @@ def download_entry(botb_cookies, entry_number, input_subfolder):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    if not response.getheader('Content-Length'):
+    if not response.getheader('Content-Length') or is_visual(botb_cookies, entry_number):
         print ('   > No mp3 render!')
         return
     if not filename.lower().endswith('.mp3'):
