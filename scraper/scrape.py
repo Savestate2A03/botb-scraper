@@ -225,11 +225,21 @@ def tag_mp3(filename, entry_number, botb_cookies, input_subfolder):
     entry_json = response.read().decode()
     json_io = StringIO(entry_json)
     botb_json_object = json.load(json_io)
+    mp3_filepath = "files/" + input_subfolder + "/mp3/" + filename
+    if 'sample' in botb_json_object['format']['token']:
+        print('sample! not saving mp3 render...')
+        os.remove(mp3_filepath)
+        return
     try:
-        audio = EasyID3("files/" + input_subfolder + "/mp3/" + filename)
+        audio = EasyID3(mp3_filepath)
     except mutagen.id3.ID3NoHeaderError:
-        audio = mutagen.File("files/" + input_subfolder + "/mp3/" + filename, easy=True)
-        audio.add_tags()
+        try:
+            audio = mutagen.File(mp3_filepath, easy=True)
+            audio.add_tags()
+        except mutagen.mp3.HeaderNotFoundError:
+            print('botbr uploaded the wrong filetype, discarding mp3!')
+            os.remove(mp3_filepath)
+            return
     audio['title']  = botb_json_object['title']
     audio['album']  = botb_json_object['battle']['title']
     audio['artist'] = botb_json_object['botbr']['name']
