@@ -300,7 +300,7 @@ def download_entry(botb_cookies, entry_number, input_subfolder):
     original_file = response.read()
     # filename cleanup, longtitleislong
     if len(filename) > 60:
-        filename_r = re.compile(r'^(.{60}).*\.(\S+)')
+        filename_r = re.compile(r'^(.{1,60}).*\.(\S+)')
         filename_m = filename_r.match(filename)
         print(filename)
         print(' ! - has been shortened to - ! ')
