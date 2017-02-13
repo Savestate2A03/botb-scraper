@@ -298,6 +298,14 @@ def download_entry(botb_cookies, entry_number, input_subfolder):
         print('no entry found!! 0:')
         return
     original_file = response.read()
+    # filename cleanup, longtitleislong
+    if len(filename) > 60:
+        filename_r = re.compile(r'^(.{60}).*\.(\S+)')
+        filename_m = filename_r.match(filename)
+        print(filename)
+        print(' ! - has been shortened to - ! ')
+        filename = filename_m.group(1) + '.' + filename_m.group(2)
+        print(filename)
     f = open('files/' + input_subfolder + '/orig/' + filename, 'wb')
     f.write(original_file)
     f.close()
