@@ -5,7 +5,6 @@ import urllib
 
 import base64
 import os
-import sys
 
 from pathlib import Path
 import errno
@@ -303,10 +302,10 @@ def download_entry(botb_cookies, entry_number, input_subfolder):
     if len(filename) > 70:
         filename_r = re.compile(r'^(.{1,70}).*\.(\S+)')
         filename_m = filename_r.match(filename)
-        print(filename.encode(sys.stdout.encoding, errors='replace').decode('utf-8'))
+        print(filename)
         print(' ! - has been shortened to - ! ')
         filename = filename_m.group(1) + '.' + filename_m.group(2)
-        print(filename.encode(sys.stdout.encoding, errors='replace').decode('utf-8'))
+        print(filename)
     f = open('files/' + input_subfolder + '/orig/' + filename, 'wb')
     f.write(original_file)
     f.close()
