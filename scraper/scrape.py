@@ -155,7 +155,7 @@ def botb_load_init_info(botb_cookies):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    webpage = response.read().decode()
+    webpage = response.read().decode('utf-8', 'ignore')
     client.close()
 
     # RegEx / BotBr info building
@@ -260,10 +260,10 @@ def get_entry_filename(botb_cookies, entry_number, ismp3 = False):
     response = client.getresponse()
     fixed_url = "butts"
     if not ismp3:
-        raw_url = regex_extract_simple('/player/EntryDonload/[0-9]+/(.*)" class="inner boxLink"', response.read().decode('utf-8'))
+        raw_url = regex_extract_simple('/player/EntryDonload/[0-9]+/(.*)" class="inner boxLink"', response.read().decode('utf-8', 'ignore'))
         fixed_url = urllib.parse.unquote(urllib.parse.unquote(raw_url))
     else:
-        raw_url = regex_extract_simple('/player/MP3Donload/[0-9]+/(.*)" class="inner boxLink"', response.read().decode('utf-8'))
+        raw_url = regex_extract_simple('/player/MP3Donload/[0-9]+/(.*)" class="inner boxLink"', response.read().decode('utf-8', 'ignore'))
         fixed_url = raw_url
     client.close()
     return fixed_url
@@ -276,7 +276,7 @@ def is_visual(botb_cookies, entry_number):
     default_headers(client, botb_cookies)
     client.endheaders()
     response = client.getresponse()
-    if 'title="view entry"><div class="botb-icon icons-eye' in response.read().decode('utf-8'):
+    if 'title="view entry"><div class="botb-icon icons-eye' in response.read().decode('utf-8', 'ignore'):
         client.close()
         return True
     client.close()
