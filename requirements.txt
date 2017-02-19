@@ -1,2 +1,2 @@
-mutagen
-cryptography
+mutagen==1.36.2
+cryptography==1.7.2
